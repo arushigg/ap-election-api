@@ -1,6 +1,6 @@
 # Explore Election API
 
-TK: short project description
+Python wrapper to use the [AP Elections API](https://developer.ap.org/ap-elections-api/docs/index.html#t=Welcome.htm).
 
 *Created by Arushi Gupta (<argupta@ap.org>)*
 
@@ -8,35 +8,59 @@ TK: short project description
 
 ## Project goal
 
-*TK: Briefly describe this project*
+Provide some Python tools to easily send requests and parse responses from AP's Election API. 
 
 ## Project notes
 
+The API has four types of data: election race information, election reports, advance turnout data, and delegate allocation data.
+
 ### Staff involved
 
-*TK: List people & contact info for people involved in the project*
-
-[Responsibility matrix](url-to-responsibility matrix)
-
-[HIRUFF Q&A](url-to-hiruff)
-
-### Data sources
-
-*TK: List access info & contact info for data sources used in the project*
+Arushi Gupta (<argupta@ap.org>, <arushi.gupta@gmail.com>)
 
 ## Technical
 
-*TK: Instructions on how to bootstrap project, run ETL processes, etc.*
+All the files are in the `analysis/` folder.
 
 ### Project setup instructions
 
 After cloning the git repo:
 
-`datakit data pull` to retrieve the data files.
+`python .first_install.py` to set up the Python environment.
 
+Create a `.env` file and add your API key as a variable named `API_KEY`.
 
-*TK: For more complex or unusual projects additional directions follow*
+### Structure
 
-## Data notes
+An example query is in `run.ipynb`. As it shows, the top level object to interact with the API is an `APIClient` object that handles all the requests and responses. A few pieces that it simplifies:
 
-*Add important caveats, limitations, and source contact info here.*
+- To request updated data for a given query, you're supposed to use a URL from the response of your last request (detailed [here](https://developer.ap.org/ap-elections-api/docs/Receiving_Election_Updates.htm)), so the client tracks all those queries and the associated request URLs.
+
+- The 403 response code means the user should wait 5-10 seconds and retry. The client will automatically retry when receiving that code.
+
+- [not tested] Some responses include an "isTruncated" variable, which means some data wasn't returned and the same request should be sent until the variable becomes false. The client automatically requeries.
+
+The `APIClient` takes an instance of the `QueryParameters` object to send a request. This class helps define the fields and data types that make a valid request more narrowly. For each of the four data types, we inherit this base class and add functions to validate the parameters and transform them into a variable.
+
+The output of a query is a `ResponseParser` object. I haven't implemented it for all the data types, but the hope is that this class structure can parse the JSON or XML that's returned to create a CSV or some other data type that (1) doesn't require the user to know specific variable strings and (2) can be combined more easily than hierarchical data types. Depending on how customers plug the API into their systems, a different way of parsing responses might make more sense.
+
+### All files
+
+- `run.ipynb`: A notebook with an example of how to interact with the API
+- `client.py`: The highest level file outlining the `APIClient` class. The `query` method here has the bulk of the request-response logic.
+- `exceptions.py`: Custom exceptions for each response status code.
+- `utils.py`: Function to handle response error codes.
+- `_fields.py`: Define all the categorical variables as custom data types.
+- `param_schema/`: A folder for all the scripts relating to the `QueryParameters` code.
+    - `_base_param.py`: Defines the abstract `QueryParameters` class, a dictionary mapping from Python variable names to the API's variable names, and a function to convert parameter fields to dictionary.
+    - Each data type has its own file that inherits `QueryParameters` to list the relevant fields and implement specific data validation checks
+- `response_schema/`: A folder for all the scripts relating to the `ResponseParser` code.
+    - `_base_response.py`: Defines the abstract `ResponseParser` class.
+    - Each data type has its own file that inherits `ResponseParser`. Not implemented yet.
+
+### Ideas of where to go next
+
+- Add more validation checks to the `QueryParameters`
+- Implement the `ResponseParser` objects for each data type
+- Implement the `APIClient.query()` to support all four data types
+- Make the exceptions more detailed

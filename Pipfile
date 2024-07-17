@@ -15,6 +15,7 @@ jupytext = "*"
 jupyterlab-templates = "*"
 itables = "*"
 ap-altair-theme = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

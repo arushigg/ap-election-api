@@ -12,3 +12,5 @@ analysis/archive/*.ipynb
 
 scratch/*
 !scratch/.gitkeep
+
+*/__pycache__/*
