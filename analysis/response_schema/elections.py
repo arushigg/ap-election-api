@@ -20,7 +20,3 @@ class ElectionsResponse(ResponseParser):
         elif self.format == f.Format.JSON:
             key = "isTruncated"
         return self.response.get(key) == "true"
-
-    def to_dataframe(self) -> pd.DataFrame:
-        # TODO
-        pass

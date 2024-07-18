@@ -2,17 +2,17 @@ import requests
 import pandas as pd
 from typing import Union
 import xml.etree.ElementTree as ET
-from abc import ABC, abstractmethod
 
 import _fields as f
 import exceptions
+import utils
 
 """
 Base class for interpreting and manipulating a response. Each of the four data
 types should inherit this class.
 """
 
-class ResponseParser(ABC):
+class ResponseParser():
     format: f.Format
     response: Union[dict, ET.ElementTree]
 
@@ -41,12 +41,14 @@ class ResponseParser(ABC):
         elif self.format == f.Format.JSON:
             return self.response.get("nextrequest")
 
-    @abstractmethod
     def to_dataframe(self) -> pd.DataFrame:
         """
         Convert the response into a data frame output.
         """
-        pass
+        if self.format == f.Format.JSON:
+            return utils.flatten_json(self.response)
+        if self.format == f.Format.XML:
+            raise Exception("Not implemented yet.")
 
     def to_csv(self, path: str) -> None:
         df = self.to_dataframe()

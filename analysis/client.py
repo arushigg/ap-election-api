@@ -2,9 +2,8 @@ import requests
 import utils
 import exceptions
 import time
-from typing import Union
 import logging
-import xml.etree.ElementTree as ET
+import pandas as pd
 
 from param_schema._base_param import QueryParameters
 from param_schema import elections, election_reports, adv_turnout, delegates
@@ -42,13 +41,13 @@ class APIClient:
         # structure is standard URL > next URL
         self.queries = dict()
 
-    def _get_url_for_query(self, params: QueryParameters) -> str:
+    def _get_url_for_query(self, params: QueryParameters, ignore_next = False) -> str:
         """
         If the same query has gone through, pull the nextrequest url, otherwise send
         the standard one.
         """
         next_url = self.queries.get(params.full_url)
-        if next_url is None:
+        if next_url is None or ignore_next:
             return params.full_url
         else:
             if self.logger is not None:
@@ -68,13 +67,14 @@ class APIClient:
         utils.handle_error_codes(response_raw)
         return response_raw
 
-    def query(self, params: QueryParameters, num_retries: int = 3) -> list[ResponseParser]:
+    def query(self, params: QueryParameters, num_retries: int = 3, ignore_next = False) -> list[ResponseParser]:
         """
         Makes a request for a given set of parameters. If the quota limit is exceeded, waits
-        and retries. Returns a list of the responses.
+        and retries. Returns a dataframe of the response data. When the ignore_next flag is True, uses
+        the original URL instead of the cached nextrequest URL.
         """
         # loads the request URL
-        req_url = self._get_url_for_query(params)
+        req_url = self._get_url_for_query(params, ignore_next)
         
         # api docs recommend waiting 5-10s for a quota limit exceeded error
         tries_so_far = 0
@@ -105,9 +105,10 @@ class APIClient:
                 if self.logger is not None:
                     self.logger.info("Response was truncated, will resend the request.")
                 # uses recursion -- does this work!?
-                return [resp] + self.query(params)
+                # also merge_responses isn't written right now, so this will definitely fail
+                return utils.merge_responses(resp, self.query(params))
             else:
-                return [resp]
+                return resp
     
         # TODO: for each data type, we need to implement the response class and handle 
         # the response appropriately
