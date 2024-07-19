@@ -1,5 +1,11 @@
 from enum import Enum
 
+"""
+All the fields that go into a request or response are detailed here. The hope is that
+a user can benefit from the autocomplete when programming and not have to deal with magic strings, 
+but I'm not totally convinced this is the best way to achieve that goal.
+"""
+
 # Required fields for an elections request
 
 class Format(Enum):
