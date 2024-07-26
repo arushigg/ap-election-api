@@ -1,11 +1,8 @@
 import requests
 import pandas as pd
-import json
+
 import exceptions
-from param_schema._base_param import QueryParameters
-from dataclasses import fields
-from enum import Enum
-from response_schema._base_response import ResponseParser
+import response_schema._base_response as br
 
 def handle_error_codes(response: requests.Response) -> None:
     """
@@ -37,7 +34,7 @@ def handle_error_codes(response: requests.Response) -> None:
     
 
 
-def merge_responses(resp_1: ResponseParser, resp_2: ResponseParser) -> ResponseParser:
+def merge_responses(resp_1: br.ResponseParser, resp_2: br.ResponseParser) -> br.ResponseParser:
     """
     Concatenate the data from different responses. Imagining this would be most useful when
     there's a truncated response that requires the same request to go out multiple times.

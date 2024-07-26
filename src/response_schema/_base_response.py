@@ -3,8 +3,7 @@ import pandas as pd
 from typing import Union
 import xml.etree.ElementTree as ET
 
-import _fields as f
-import exceptions
+import fields as f
 import utils
 
 """
@@ -51,5 +50,8 @@ class ResponseParser():
             raise Exception("Not implemented yet.")
 
     def to_csv(self, path: str) -> None:
+        """
+        Save the response as a CSV.
+        """
         df = self.to_dataframe()
         df.to_csv(path)

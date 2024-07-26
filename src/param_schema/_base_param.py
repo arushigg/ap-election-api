@@ -1,5 +1,4 @@
 from dataclasses import dataclass, fields
-import _fields as f
 from abc import ABC, abstractmethod
 from enum import Enum
 from urllib.parse import urlencode
