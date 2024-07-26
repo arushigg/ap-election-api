@@ -1,15 +1,20 @@
 import requests
 import time
 import logging
-import pandas as pd
 
-import src.exceptions
-import src._utils
-from src.param_schema._base_param import QueryParameters
-from src.param_schema import elections, election_reports, adv_turnout, delegates
-from src._fields import Format, DataType
-from src.response_schema._base_response import ResponseParser
-from src.response_schema.elections import ElectionsResponse
+import exceptions, utils, param_schema, response_schema
+import fields as f
+import param_schema._base_param as bp
+import param_schema.elections as ep
+import param_schema.election_reports as erp
+import param_schema.delegates as dp
+import param_schema.adv_turnout as atp
+
+import response_schema._base_response as br
+import response_schema.elections as er
+import response_schema.election_reports as err
+import response_schema.delegates as dr
+import response_schema.adv_turnout as atr
 
 """
 A class for interacting with the API. Manages requests and responses.
@@ -17,12 +22,12 @@ A class for interacting with the API. Manages requests and responses.
 
 class APIClient:
     api_key: str
-    format: Format
+    format: f.Format
     headers: dict[str]
     queries: dict[str]
     logger: logging.Logger
 
-    def __init__(self, api_key: str, format: Format = Format.JSON, logger: logging.Logger = None):
+    def __init__(self, api_key: str, format: f.Format = f.Format.JSON, logger: logging.Logger = None):
         """
         Create the client with your API key and desired response format. Can optionally provide a 
         logger object
@@ -41,7 +46,7 @@ class APIClient:
         # structure is standard URL > next URL
         self.queries = dict()
 
-    def _get_url_for_query(self, params: QueryParameters, ignore_next = False) -> str:
+    def _get_url_for_query(self, params: bp.QueryParameters, ignore_next = False) -> str:
         """
         If the same query has gone through, pull the nextrequest url, otherwise send
         the standard one.
@@ -64,10 +69,10 @@ class APIClient:
             self.logger.info(f"Sending request to {url}")
         response_raw = requests.get(url=url, headers=self.headers)
         # raises an error if the request didn't go through
-        _utils.handle_error_codes(response_raw)
+        utils.handle_error_codes(response_raw)
         return response_raw
 
-    def query(self, params: QueryParameters, num_retries: int = 3, ignore_next = False) -> list[ResponseParser]:
+    def query(self, params: bp.QueryParameters, num_retries: int = 3, ignore_next = False) -> br.ResponseParser:
         """
         Makes a request for a given set of parameters. If the quota limit is exceeded, waits
         and retries. Returns a dataframe of the response data. When the ignore_next flag is True, uses
@@ -87,9 +92,12 @@ class APIClient:
                     self.logger.info(f"Exceeded the quota limit. Will retry in 5 seconds...")
                 time.sleep(5)
                 tries_so_far += 1
-        
-        if isinstance(params, elections.ElectionParameters):
-            resp = ElectionsResponse(response_raw, self.format)
+
+        if tries_so_far >= num_retries:
+            raise exceptions.QuotaLimitExceededError(f"Made {num_retries} attempts, still failed.")
+
+        if isinstance(params, ep.ElectionParameters):
+            resp = er.ElectionResponse(response_raw, self.format)
 
             # record the returned next URL if it exists, otherwise raise a warning
             if resp.next_url is None:
@@ -115,11 +123,9 @@ class APIClient:
     
         # TODO: for each data type, we need to implement the response class and handle 
         # the response appropriately
-        elif isinstance(params, election_reports.ElectionReportParameters):
-            pass
-        elif isinstance(params, adv_turnout.AdvTurnoutParameters):
-            pass
-        elif isinstance(params, delegates.DelegateParameters):
-            pass
-
-        return response_raw
+        elif isinstance(params, erp.ElectionReportParameters):
+            return err.ElectionReportResponse(response_raw)
+        elif isinstance(params, atp.AdvTurnoutParameters):
+            return atr.AdvTurnoutResponse(response_raw)
+        elif isinstance(params, dp.DelegateParameters):
+            return dr.DelegateResponse(response_raw)

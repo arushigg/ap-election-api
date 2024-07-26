@@ -1,10 +1,10 @@
 from typing import Union
 import xml.etree.ElementTree as ET
 
-import src._fields as f
-from src.response_schema._base_response import ResponseParser
+import fields as f
+from _base_response import ResponseParser
 
-class ElectionsResponse(ResponseParser):
+class ElectionResponse(ResponseParser):
     format: f.Format
     response: Union[dict, ET.ElementTree]
 

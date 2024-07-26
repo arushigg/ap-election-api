@@ -1,9 +1,11 @@
-from dataclasses import dataclass, fields
-import src._fields as f
 from typing import Union
-from src.exceptions import InvalidParameterError
-from src.param_schema._base_param import QueryParameters, OPT_PARAM_SUPERSET, create_optional_param_dict
 from datetime import datetime
+from dataclasses import dataclass
+
+import fields as f
+import exceptions as e
+from _base_param import QueryParameters, OPT_PARAM_SUPERSET, create_optional_param_dict
+
 
 @dataclass
 class ElectionParameters(QueryParameters):
@@ -42,18 +44,18 @@ class ElectionParameters(QueryParameters):
                 self.state[0] == f.State.US or
                 len(self.state) != 1
             ):
-                raise InvalidParameterError("Invalid parameter: Race and reporting unit IDs require exactly one state.")
+                raise e.InvalidParameterError("Invalid parameter: Race and reporting unit IDs require exactly one state.")
         
         # the 'US' code only applies to the general presidential election
         if self.state == f.State.US or (isinstance(self.state, list) and f.State.US in self.state):
             if self.election_date.year % 4 != 0:
-                raise InvalidParameterError(
+                raise e.InvalidParameterError(
                     self.state, "Invalid parameter: The state can only be 'US' in the general election of a presidential year."
                 )
         
         # set zero counts and omit results are mutually exclusive
         if self.set_zero_counts == f.SetZeroCounts.TRUE and self.omit_results == f.OmitResults.TRUE:
-            raise InvalidParameterError(
+            raise e.InvalidParameterError(
                 [self.set_zero_counts, self.omit_results],
                 "Invalid parameter: set_zero_counts and omit_results are mutually exclusive."
             )
